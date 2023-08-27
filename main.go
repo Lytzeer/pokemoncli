@@ -259,17 +259,21 @@ var potions = map[string]map[string]interface{}{
 	},
 }
 
-// player variable
+// player1 variable
 
 var pokemon_inventory map[string]map[string]interface{} = make(map[string]map[string]interface{})
 var potions_inventory []string = []string{}
 var curent_pokemon string
 var effect [][]string = [][]string{} // [0] = pokemon, [1] = effect, [2] = turns left, [3] = dmg
+var pokemon_list []string = []string{}
 
-// ia variable
+// player2 variable
 
-var pokemon_inventory_ia map[string]map[string]interface{} = make(map[string]map[string]interface{})
-var potions_inventory_ia []string = []string{}
+var pokemon_inventory_player2 map[string]map[string]interface{} = make(map[string]map[string]interface{})
+var potions_inventory_player2 []string = []string{}
+var curent_pokemon_player2 string
+var effect_player2 [][]string = [][]string{} // [0] = pokemon, [1] = effect, [2] = turns left, [3] = dmg
+var pokemon_list_player2 []string = []string{}
 
 // player struct
 
@@ -288,14 +292,14 @@ func main() {
 	fmt.Println(player1.name)
 	fmt.Println(getPokemonList())
 	fmt.Println(getPotionList())
-	name := getPokemonList()[0]
-	fmt.Println("First Player pokemon name", name)
-	fmt.Println("First Player pokemon type", getPokemonType(name))
-	choosePokemonIA()
-	choosePotionsIA()
+	pokemon_list = getPokemonList()
+	fmt.Println(curent_pokemon)
+	chooseCurrentPokemon()
+	choosePokemonPlayer2()
+	choosePotionsPlayer2()
 }
 
-// init player function
+// init player1 function
 
 func choosePokemon() {
 	key_pokemon := []string{}
@@ -304,9 +308,6 @@ func choosePokemon() {
 	}
 	for i := 0; i < 5; i++ {
 		pokemon_inventory[key_pokemon[i]] = pokemons[key_pokemon[i]]
-		if i == 0 {
-			curent_pokemon = key_pokemon[i]
-		}
 	}
 }
 
@@ -328,20 +329,39 @@ func choosePotions() {
 	}
 }
 
-// init IA function
+func chooseCurrentPokemon() {
+	var name string
+	var temp string
+	fmt.Println("Choose your current pokemon :")
+	fmt.Println(pokemon_list)
+	fmt.Scanln(&temp)
+	for i := 0; i < len(pokemon_inventory); i++ {
+		if temp == pokemon_list[i] {
+			name = temp
+			fmt.Println("Your current pokemon is now :", name)
+		}
+	}
+	if name == "" {
+		fmt.Println("Please choose a correct pokemon")
+		temp = ""
+		chooseCurrentPokemon()
+	}
+	curent_pokemon = name
+}
 
-func choosePokemonIA() {
+// init player2 function
+
+func choosePokemonPlayer2() {
 	key_pokemon := []string{}
 	for k := range pokemons {
 		key_pokemon = append(key_pokemon, k)
 	}
 	for i := 0; i < 5; i++ {
-		pokemon_inventory_ia[key_pokemon[i]] = pokemons[key_pokemon[i]]
+		pokemon_inventory_player2[key_pokemon[i]] = pokemons[key_pokemon[i]]
 	}
-	// fmt.Println("IA pokemon inventory :", pokemon_inventory_ia)
 }
 
-func choosePotionsIA() {
+func choosePotionsPlayer2() {
 	key_potions := []string{}
 	potions_droprate_list := []string{}
 	for k := range potions {
@@ -355,12 +375,11 @@ func choosePotionsIA() {
 	}
 	for i := 0; i < 7; i++ {
 		random_potion := rand.Intn(len(potions_droprate_list)) + 1
-		potions_inventory_ia = append(potions_inventory_ia, potions_droprate_list[random_potion])
+		potions_inventory_player2 = append(potions_inventory_player2, potions_droprate_list[random_potion])
 	}
-	// fmt.Println("IA backpack :", potions_inventory_ia)
 }
 
-// player get function
+// player1 get function
 
 func getPokemonList() []string {
 	pokemon_list := []string{}
@@ -382,13 +401,13 @@ func getPokemonType(pokemon_name string) []string {
 	return pokemon_inventory[pokemon_name]["Type"].([]string)
 }
 
-// player combat function
+// player1 combat function
 
-func Attack(pokemon_inventory, pokemon_inventory_ia map[string]map[string]interface{}, name, ia_name string) {
-	if pokemon_inventory_ia[ia_name]["HP"].(int)-pokemon_inventory[name]["Dmg"].(int) > 0 {
-		pokemon_inventory_ia[ia_name]["HP"] = pokemon_inventory_ia[ia_name]["HP"].(int) - pokemon_inventory[name]["Dmg"].(int)
+func Attack(pokemon_inventory, pokemon_inventory_player2 map[string]map[string]interface{}, name, player2_name string) {
+	if pokemon_inventory_player2[player2_name]["HP"].(int)-pokemon_inventory[name]["Dmg"].(int) > 0 {
+		pokemon_inventory_player2[player2_name]["HP"] = pokemon_inventory_player2[player2_name]["HP"].(int) - pokemon_inventory[name]["Dmg"].(int)
 	} else {
-		pokemon_inventory_ia[ia_name]["HP"] = 0
+		pokemon_inventory_player2[player2_name]["HP"] = 0
 	}
 }
 
@@ -445,8 +464,235 @@ func Paralysis(pokemon_name string) {
 
 func Sleep(pokemon_name string) {
 	random := rand.Intn(100) + 1
-	if random <= 20 {
+	if random <= 8 {
 		fmt.Println("Your pokemon", pokemon_name, "is sleeping")
 		effect = append(effect, []string{pokemon_name, "Sleep", "2", "0"})
 	}
+}
+
+// check effects function
+
+func isBurn(name string) bool {
+	for i := 0; i < len(effect); i++ {
+		if effect[i][0] == name && effect[i][1] == "Burn" {
+			return true
+		}
+	}
+	return false
+}
+
+func isPoisoned(name string) bool {
+	for i := 0; i < len(effect); i++ {
+		if effect[i][0] == name && effect[i][1] == "Poison" {
+			return true
+		}
+	}
+	return false
+}
+
+func isFrozen(name string) bool {
+	for i := 0; i < len(effect); i++ {
+		if effect[i][0] == name && effect[i][1] == "Frozen" {
+			return true
+		}
+	}
+	return false
+}
+
+func isParalysis(name string) bool {
+	for i := 0; i < len(effect); i++ {
+		if effect[i][0] == name && effect[i][1] == "Paralysis" {
+			return true
+		}
+	}
+	return false
+}
+
+func isSleep(name string) bool {
+	for i := 0; i < len(effect); i++ {
+		if effect[i][0] == name && effect[i][1] == "Sleep" {
+			return true
+		}
+	}
+	return false
+}
+
+// manage effects function
+
+func checkTurnsLeft() {
+	for i := 0; i < len(effect); i++ {
+	}
+}
+
+func deleteEffect() {
+	for i := 0; i < len(effect); i++ {
+		if effect[i][2] == "0" {
+			effect = append(effect[:i], effect[i+1:]...)
+		}
+	}
+}
+
+// check type function
+// return true if the pokemon has the type
+
+func isFire(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Fire" {
+			return true
+		}
+	}
+	return false
+}
+
+func isWater(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Water" {
+			return true
+		}
+	}
+	return false
+}
+
+func isGrass(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Grass" {
+			return true
+		}
+	}
+	return false
+}
+
+func isElectric(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Electric" {
+			return true
+		}
+	}
+	return false
+}
+
+func isPsychic(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Psychic" {
+			return true
+		}
+	}
+	return false
+}
+
+func isIce(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Ice" {
+			return true
+		}
+	}
+	return false
+}
+
+func isDragon(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Dragon" {
+			return true
+		}
+	}
+	return false
+}
+
+func isDark(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Dark" {
+			return true
+		}
+	}
+	return false
+}
+
+func isFairy(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Fairy" {
+			return true
+		}
+	}
+	return false
+}
+
+func isNormal(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Normal" {
+			return true
+		}
+	}
+	return false
+}
+
+func isFighting(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Fighting" {
+			return true
+		}
+	}
+	return false
+}
+
+func isFlying(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Flying" {
+			return true
+		}
+	}
+	return false
+}
+
+func isPoison(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Poison" {
+			return true
+		}
+	}
+	return false
+}
+
+func isGround(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Ground" {
+			return true
+		}
+	}
+	return false
+}
+
+func isRock(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Rock" {
+			return true
+		}
+	}
+	return false
+}
+
+func isBug(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Bug" {
+			return true
+		}
+	}
+	return false
+}
+
+func isGhost(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Ghost" {
+			return true
+		}
+	}
+	return false
+}
+
+func isSteel(pokemon_type []string) bool {
+	for i := 0; i < len(pokemon_type); i++ {
+		if pokemon_type[i] == "Steel" {
+			return true
+		}
+	}
+	return false
 }
